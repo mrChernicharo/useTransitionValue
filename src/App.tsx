@@ -1,50 +1,79 @@
-import { Component, createSignal, createSelector, createEffect } from "solid-js";
+import { Component, createSignal, createSelector, createEffect, For } from "solid-js";
+import { loop } from "./loop";
 import { useTransitionValue } from "./useTransitionValue";
 
-// import logo from './logo.svg';
-// import styles from './App.module.css';
 const DUR = 1000;
+const initialList = [{ value: 10 }, { value: 20 }];
+
 const App: Component = () => {
-	let prevVal: number | undefined;
-	const [val, setVal] = createSignal(10);
-	const [transitionVal, setTransitionVal] = createSignal(10);
+  let prevList: { value: number }[] = [];
+  const [dataList, setDataList] = createSignal<{ value: number }[]>(initialList);
+  const [transitionList, setTransitionList] = createSignal<{ value: number }[]>(initialList);
 
-	return (
-		<div>
-			<h1>Transition Value</h1>
-			<div>
-				<input
-					type="number"
-					value={val()}
-					onChange={e => {
-						if (e) {
-							prevVal = val();
+  return (
+    <div>
+      <h1>Transition Value</h1>
+      <div>
+        <ul style={{ padding: 0 }}>
+          <For each={dataList()}>
+            {(item, idx) => (
+              <li style={{ border: "1px solid", "list-style": "none" }}>
+                <p>{item.value}</p>
+                <input
+                  type="number"
+                  value={item.value}
+                  onChange={(e) => {
+                    if (e) {
+                      prevList = dataList();
 
-							setVal(+e.currentTarget.value);
+                      setDataList((list) => {
+                        const copy = [...list];
+                        copy.splice(idx(), 1, { value: +e.currentTarget.value });
+                        return copy;
+                      });
 
-							console.log({ prevVal, val: val() });
+                      // useTransitionValue({
+                      //   start: prevList[idx()].value || 0,
+                      //   final: dataList()[idx()].value,
+                      //   duration: DUR,
+                      //   cb: (curr) => {
+                      //     setTransitionList((list) => {
+                      //       const copy = [...list];
+                      //       copy.splice(idx(), 1, { value: curr });
+                      //       return copy;
+                      //     });
+                      //   },
+                      // });
 
-							useTransitionValue({
-								start: prevVal || 0,
-								final: +e.currentTarget.value,
-								duration: DUR,
-								cb: curr => {
-									setTransitionVal(curr);
-								},
-							});
-						}
-					}}
-				/>
-			</div>
-			<div>value: {val()}</div>
-			<div>
-				transitionValue:{" "}
+                      loop({
+                        start: prevList[idx()].value || 0,
+                        final: dataList()[idx()].value,
+                        duration: DUR,
+                        cb: (curr) => {
+                          setTransitionList((list) => {
+                            const copy = [...list];
+                            copy.splice(idx(), 1, { value: curr });
+                            return copy;
+                          });
+                        },
+                      });
+                    }
+                  }}
+                />
+              </li>
+            )}
+          </For>
+        </ul>
+      </div>
+      <pre>{JSON.stringify(transitionList(), null, 2)}</pre>
+      {/* <div>
+				transitionValue:
 				{Math.abs(transitionVal()) > 1
 					? transitionVal().toFixed()
 					: transitionVal().toPrecision(2)}
-			</div>
-		</div>
-	);
+			</div> */}
+    </div>
+  );
 };
 
 export default App;
