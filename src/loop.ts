@@ -1,38 +1,57 @@
-export const loop = (config: { start: number; final: number; duration: number; cb: (currentValue: number) => void }) => {
-  const { start, final, duration, cb } = config;
+import { createSignal } from "solid-js";
+
+const [isLooping, setIsLooping] = createSignal(false);
+
+let frameID: number;
+let lastCurr!: number;
+
+export const loop = (config: {
+  id: string;
+  initial: number;
+  final: number;
+  duration: number;
+  cb: (currentValue: number) => void;
+}) => {
+  const { id, initial, final, duration, cb } = config;
 
   const startTime = Date.now();
-  const finalTime = startTime + duration - 32;
+  const finalTime = startTime + duration;
   let currTime = startTime;
 
-  // console.log({ start, final });
-
+  let start = isLooping() ? lastCurr : initial;
   let curr = start;
   let diff = final - start;
   let itCount = 60 * (duration / 1000);
-  const step = diff / itCount;
+  let step = diff / itCount;
 
-  const repeat = () => {
-    // console.log({
-    //   i,
-    //   startTime: startTime.toString().slice(-5),
-    //   finalTime: finalTime.toString().slice(-5),
-    //   currTime: currTime.toString().slice(-5),
-    // });
+  if (!isLooping()) {
+    console.log("no loop", frameID);
+    frameID = requestAnimationFrame(repeat);
+  }
+
+  if (isLooping()) {
+    console.log("isLooping", frameID);
+    cancelAnimationFrame(frameID);
+    curr = lastCurr;
+    frameID = requestAnimationFrame(repeat);
+  }
+
+  function repeat(timestamp: number) {
+    setIsLooping(true);
+
     cb(curr);
+    lastCurr = curr;
     currTime = Date.now();
     curr += step;
 
     if (currTime < finalTime) {
-      requestAnimationFrame(repeat);
+      frameID = requestAnimationFrame(repeat);
     } else {
-      cb(final);
+      curr = final;
+      cb(curr);
+      setIsLooping(false);
     }
-  };
 
-  // cb(curr);
-  // currTime = Date.now();
-  // curr += step;
-
-  requestAnimationFrame(repeat);
+    console.log({ curr, final });
+  }
 };
