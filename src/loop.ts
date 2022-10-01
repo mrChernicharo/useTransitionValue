@@ -32,12 +32,10 @@ export const loop = (config: {
   let step = diff / itCount;
 
   if (!instances[id].isLooping) {
-    console.log("no loop", { id });
     setInstances(id, "frameId", requestAnimationFrame(repeat));
   }
 
   if (instances[id].isLooping) {
-    console.log("isLooping", { id, lastCurr: instances[id].lastCurr });
     cancelAnimationFrame(instances[id].frameId);
     curr = instances[id].lastCurr;
     setInstances(id, "frameId", requestAnimationFrame(repeat));
@@ -49,7 +47,6 @@ export const loop = (config: {
     setInstances(id, "isLooping", true);
     setInstances(id, "lastCurr", curr);
 
-    console.log({ id, curr });
     cb(curr);
     curr += step;
 
@@ -59,10 +56,7 @@ export const loop = (config: {
       curr = final;
       cb(curr);
       setInstances(id, "isLooping", false);
-      // setTimeout(() => {
-      // }, 1000);
     }
-    // console.log(instances[id]);
     // console.log(unwrap(instances[id]));
     // console.log({ curr, final });
   }

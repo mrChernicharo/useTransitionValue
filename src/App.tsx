@@ -2,13 +2,45 @@ import { Component, createSignal, createSelector, createEffect, For, Index } fro
 import { loop } from "./loop";
 import { useTransitionValue } from "./useTransitionValue";
 
-const DUR = 2000;
-const initialList = [{ value: 10 }, { value: 20 }];
+const DUR = 4000;
+const initialList = [{ value: 100 }, { value: 10 }, { value: 20 }];
+
+const Chart: Component<{ data: { value: number }[] }> = (props) => {
+  let prevList: { value: number }[] = [];
+
+  const [data, setData] = createSignal<{ value: number }[]>([]);
+  const [transitionList, setTransitionList] = createSignal<{ value: number }[]>(props.data);
+
+  createEffect(() => {
+    prevList = data();
+    setData(props.data);
+  });
+  createEffect(() => {
+    console.log({ prevList, data: data() });
+    data().forEach((d, idx, arr) => {
+      if (prevList.length && prevList[idx] && prevList[idx].value !== arr[idx].value) {
+        loop({
+          id: String(idx),
+          initial: prevList[idx].value || 0,
+          final: arr[idx].value || 0,
+          duration: DUR,
+          cb: (curr) => setTransitionList((list) => list.map((d, i) => (i === idx ? { value: curr } : d))),
+        });
+      }
+    });
+  });
+
+  return (
+    <div style={{ border: "1px solid" }}>
+      <p>Chart</p>
+      <pre>{JSON.stringify(data(), null, 2)}</pre>
+      <pre>{JSON.stringify(transitionList(), null, 2)}</pre>
+    </div>
+  );
+};
 
 const App: Component = () => {
-  let prevList: { value: number }[] = [];
   const [dataList, setDataList] = createSignal<{ value: number }[]>(initialList);
-  const [transitionList, setTransitionList] = createSignal<{ value: number }[]>(initialList);
 
   return (
     <div>
@@ -17,50 +49,13 @@ const App: Component = () => {
         <ul style={{ padding: 0 }}>
           <Index each={dataList()}>
             {(item, idx) => (
-              <li style={{ border: "1px solid", "list-style": "none" }}>
-                <p>{item().value}</p>
+              <li style={{ border: "1px dashed", "list-style": "none" }}>
+                <label>{item().value}</label>
                 <input
                   type="number"
                   value={item().value}
                   onChange={(e) => {
-                    if (e) {
-                      prevList = dataList();
-
-                      setDataList((list) =>
-                        list.map((d, i) => {
-                          return i === idx ? { value: +e.currentTarget.value } : d;
-                        })
-                      );
-
-                      loop({
-                        id: String(idx),
-                        initial: prevList[idx].value || 0,
-                        final: dataList()[idx].value,
-                        duration: DUR,
-                        cb: (curr) => {
-                          setTransitionList((list) =>
-                            list.map((d, i) => {
-                              return i === idx ? { value: curr } : d;
-                            })
-                          );
-                        },
-                      });
-
-                      {
-                        // useTransitionValue({
-                        //   start: prevList[idx()].value || 0,
-                        //   final: dataList()[idx()].value,
-                        //   duration: DUR,
-                        //   cb: (curr) => {
-                        //     setTransitionList((list) => {
-                        //       const copy = [...list];
-                        //       copy.splice(idx(), 1, { value: curr });
-                        //       return copy;
-                        //     });
-                        //   },
-                        // });
-                      }
-                    }
+                    setDataList((list) => list.map((d, i) => (i === idx ? { value: +e.currentTarget.value } : d)));
                   }}
                 />
               </li>
@@ -68,13 +63,12 @@ const App: Component = () => {
           </Index>
         </ul>
       </div>
-      <pre>{JSON.stringify(transitionList(), null, 2)}</pre>
-      {/* <div>
-				transitionValue:
-				{Math.abs(transitionVal()) > 1
-					? transitionVal().toFixed()
-					: transitionVal().toPrecision(2)}
-			</div> */}
+
+      <div>
+        <Chart data={dataList()} />
+      </div>
+
+      <div>{/* <button onClick={(e) => setDataList((list) => [...list, { value: Math.random() * 100 }])}>ADD</button> */}</div>
     </div>
   );
 };
