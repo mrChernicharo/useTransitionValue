@@ -1,43 +1,70 @@
 import { Component, createSignal, createSelector, createEffect, For, Index, createMemo } from "solid-js";
-import { loop } from "./loop";
+import { useTransitionValue } from "./useTransitionValue";
 
 type DataPoint = { value: number };
 
 const initialList = [{ value: 100 }, { value: 50 }, { value: 20 }];
+// const initialList = [{ value: 100 }, { value: 50 }, { value: 20 }];
 
 const Chart: Component<{ data: DataPoint[] }> = (props) => {
-  const DUR = 4000;
+  const DUR = 600;
   let prevList: DataPoint[] = [];
 
   const [data, setData] = createSignal<DataPoint[]>([]);
   const [transitionList, setTransitionList] = createSignal<DataPoint[]>(props.data);
 
-  const isUpdating = () => prevList.some((o, i) => o.value !== data()[i].value);
+  const update = (curr: number, idx: number) =>
+    setTransitionList((list) => list.map((d, i) => (i === idx ? { value: curr } : d)));
 
+  // data setup: receiving bulk data via props
   createEffect(() => {
-    if (isUpdating()) {
-      console.log({ prevList, dataProps: props.data });
-    }
     prevList = data();
     setData(props.data);
     setTransitionList(props.data);
   });
 
+  // transitions setup: tell what values should update when
   createEffect(() => {
-    data().forEach((d, idx, arr) => {
-      if (prevList.length && prevList[idx] && prevList[idx].value !== arr[idx].value) {
-        console.log("loop! is updating!", { prevList, arr });
-        loop({
+    // Initial Transition
+    if (prevList.length === 0) {
+      data().forEach((d, idx, arr) => {
+        useTransitionValue({
           id: String(idx),
-          initial: prevList[idx].value || 0,
-          final: arr[idx].value || 0,
+          initial: 0,
+          final: arr[idx].value,
           duration: DUR,
-          cb: (curr) => setTransitionList((list) => list.map((d, i) => (i === idx ? { value: curr } : d))),
+          cb: (val) => update(val, idx),
+        });
+      });
+    }
+
+    // new element added
+    if (prevList.length !== 0 && prevList.length < props.data.length) {
+      let idx = props.data.length - 1;
+      // console.log("added new element!", { data: data(), item: data()[idx], idx });
+
+      useTransitionValue({
+        id: String(idx),
+        initial: 0,
+        final: data()[idx].value || 0,
+        duration: DUR,
+        cb: (val) => update(val, idx),
+      });
+    }
+
+    // standalone value updated
+    data().forEach((d, idx, arr) => {
+      if (prevList[idx] && prevList[idx].value !== arr[idx].value) {
+        // console.log("useTransitionValue! value updating!", { prevList, arr, value: arr[idx].value });
+        useTransitionValue({
+          id: String(idx),
+          initial: prevList[idx].value,
+          final: arr[idx].value,
+          duration: DUR,
+          cb: (val) => update(val, idx),
         });
       }
     });
-
-    // console.log(data());
   });
 
   return (
@@ -49,9 +76,6 @@ const Chart: Component<{ data: DataPoint[] }> = (props) => {
           {(item, i) => <rect x={`${(i() + 1) * 100}px`} width="20px" height={`${item.value}px`} y="0" fill="#0f9" />}
         </For>
       </svg>
-
-      <pre>{JSON.stringify(data(), null, 2)}</pre>
-      <pre>{JSON.stringify(transitionList(), null, 2)}</pre>
     </div>
   );
 };
@@ -64,20 +88,7 @@ const App: Component = () => {
       <h1>Transition Value</h1>
       <div>
         <ul style={{ padding: 0 }}>
-          {/* <For each={dataList()}>
-            {(item, idx) => (
-              <li style={{ border: "1px dashed", "list-style": "none" }}>
-                <label>{item.value}</label>
-                <input
-                  type="number"
-                  value={item.value}
-                  onChange={(e) => {
-                    setDataList((list) => list.map((d, i) => (i === idx() ? { value: +e.currentTarget.value } : d)));
-                  }}
-                />
-              </li>
-            )}
-          </For> */}
+          {/* <For> had the <input> lose its focus onChange. <Index> worked better instead */}
           <Index each={dataList()}>
             {(item, idx) => (
               <li style={{ border: "1px dashed", "list-style": "none" }}>
@@ -102,8 +113,7 @@ const App: Component = () => {
       <div>
         <button
           onClick={(e) => {
-            setDataList((list) => [...list, { value: Math.random() * 100 }]);
-            // setDataList((list) => [...list, { value: 0 }]);
+            setDataList((list) => [...list, { value: Math.round(Math.random() * 100) }]);
           }}
         >
           ADD
