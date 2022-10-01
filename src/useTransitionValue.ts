@@ -1,6 +1,8 @@
 import { createStore } from "solid-js/store";
 
-const [instances, setInstances] = createStore<{ [id: string]: { isLooping: boolean; frameId: number; lastCurr: number } }>({});
+const [instances, setInstances] = createStore<{
+  [id: string]: { isLooping: boolean; frameId: number; lastCurr: number };
+}>({});
 
 /**
  * @function useTransitionValue
