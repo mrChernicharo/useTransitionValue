@@ -1,11 +1,10 @@
 import { Component, createSignal, createSelector, createEffect, For, Index } from "solid-js";
 import { loop } from "./loop";
-import { useTransitionValue } from "./useTransitionValue";
 
-const DUR = 4000;
-const initialList = [{ value: 100 }, { value: Math.trunc(Math.random() * 100) }, { value: 20 }];
+const initialList = [{ value: 100 }, { value: 50 }, { value: 20 }];
 
 const Chart: Component<{ data: { value: number }[] }> = (props) => {
+  const DUR = 4000;
   let prevList: { value: number }[] = [];
 
   const [data, setData] = createSignal<{ value: number }[]>([]);
@@ -15,6 +14,7 @@ const Chart: Component<{ data: { value: number }[] }> = (props) => {
     prevList = data();
     setData(props.data);
   });
+
   createEffect(() => {
     console.log({ prevList, data: data() });
     data().forEach((d, idx, arr) => {
@@ -33,7 +33,14 @@ const Chart: Component<{ data: { value: number }[] }> = (props) => {
   return (
     <div style={{ border: "1px solid" }}>
       <p>Chart</p>
-      <pre>{JSON.stringify(data(), null, 2)}</pre>
+
+      <svg width="100%" height="200px" style={{ background: "#eee" }}>
+        <For each={transitionList()}>
+          {(item, i) => <rect x={`${(i() + 1) * 100}px`} width="20px" height={`${item.value}px`} y="0" fill="#0f9" />}
+        </For>
+      </svg>
+
+      {/* <pre>{JSON.stringify(data(), null, 2)}</pre> */}
       <pre>{JSON.stringify(transitionList(), null, 2)}</pre>
     </div>
   );
