@@ -3,7 +3,7 @@ import { loop } from "./loop";
 import { useTransitionValue } from "./useTransitionValue";
 
 const DUR = 4000;
-const initialList = [{ value: 100 }, { value: 10 }, { value: 20 }];
+const initialList = [{ value: 100 }, { value: Math.trunc(Math.random() * 100) }, { value: 20 }];
 
 const Chart: Component<{ data: { value: number }[] }> = (props) => {
   let prevList: { value: number }[] = [];
