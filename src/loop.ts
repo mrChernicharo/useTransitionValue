@@ -1,9 +1,12 @@
 import { createSignal } from "solid-js";
+import { createStore, unwrap } from "solid-js/store";
 
-const [isLooping, setIsLooping] = createSignal(false);
+// const [isLooping, setIsLooping] = createSignal(false);
 
 let frameID: number;
 let lastCurr!: number;
+
+const [instances, setInstances] = createStore<{ [id: string]: { isLooping: boolean; frameId: number; lastCurr: number } }>({});
 
 export const loop = (config: {
   id: string;
@@ -14,44 +17,53 @@ export const loop = (config: {
 }) => {
   const { id, initial, final, duration, cb } = config;
 
+  if (!(id in instances)) {
+    setInstances(id, { isLooping: false, frameId: 0, lastCurr: 0 });
+  }
+
   const startTime = Date.now();
   const finalTime = startTime + duration;
   let currTime = startTime;
 
-  let start = isLooping() ? lastCurr : initial;
+  let start = instances[id].isLooping ? instances[id].lastCurr : initial;
   let curr = start;
   let diff = final - start;
   let itCount = 60 * (duration / 1000);
   let step = diff / itCount;
 
-  if (!isLooping()) {
-    console.log("no loop", frameID);
-    frameID = requestAnimationFrame(repeat);
+  if (!instances[id].isLooping) {
+    console.log("no loop", { id });
+    setInstances(id, "frameId", requestAnimationFrame(repeat));
   }
 
-  if (isLooping()) {
-    console.log("isLooping", frameID);
-    cancelAnimationFrame(frameID);
-    curr = lastCurr;
-    frameID = requestAnimationFrame(repeat);
+  if (instances[id].isLooping) {
+    console.log("isLooping", { id, lastCurr: instances[id].lastCurr });
+    cancelAnimationFrame(instances[id].frameId);
+    curr = instances[id].lastCurr;
+    setInstances(id, "frameId", requestAnimationFrame(repeat));
   }
 
   function repeat(timestamp: number) {
-    setIsLooping(true);
-
-    cb(curr);
-    lastCurr = curr;
     currTime = Date.now();
+
+    setInstances(id, "isLooping", true);
+    setInstances(id, "lastCurr", curr);
+
+    console.log({ id, curr });
+    cb(curr);
     curr += step;
 
     if (currTime < finalTime) {
-      frameID = requestAnimationFrame(repeat);
+      setInstances(id, "frameId", requestAnimationFrame(repeat));
     } else {
       curr = final;
       cb(curr);
-      setIsLooping(false);
+      setInstances(id, "isLooping", false);
+      // setTimeout(() => {
+      // }, 1000);
     }
-
-    console.log({ curr, final });
+    // console.log(instances[id]);
+    // console.log(unwrap(instances[id]));
+    // console.log({ curr, final });
   }
 };
