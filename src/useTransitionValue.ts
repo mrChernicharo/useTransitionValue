@@ -2,12 +2,19 @@ import { createStore } from "solid-js/store";
 
 const [instances, setInstances] = createStore<{ [id: string]: { isLooping: boolean; frameId: number; lastCurr: number } }>({});
 
+/**
+ * @function useTransitionValue
+ *
+ * @param {object} config
+ *
+ * @description transition between two values over time. and act upon every micro update passing in a callback function, where you'll have access to the current transitioning value.
+ */
 export const useTransitionValue = (config: {
   id: string;
   initial: number;
   final: number;
   duration: number;
-  cb: (currentValue: number) => void;
+  cb: (value: number) => void;
 }) => {
   const { id, initial, final, duration, cb } = config;
 
@@ -56,13 +63,15 @@ export const useTransitionValue = (config: {
   }
 };
 
+// LEGACY VERSION
+
 // export const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 // export const useTransitionValue = async (config: {
 //   start: number;
 //   final: number;
 //   duration: number;
-//   cb: (currentValue: number) => void;
+//   cb: (value: number) => void;
 // }) => {
 //   const { start, final, duration, cb } = config;
 
